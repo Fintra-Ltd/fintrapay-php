@@ -2,11 +2,19 @@
 
 Official PHP SDK for the [FintraPay](https://fintrapay.io) crypto payment gateway API. Accept stablecoin payments, payment links, subscriptions, deposit API, payouts, withdrawals, and earn yield -- all with automatic HMAC-SHA256 request signing.
 
-[![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://packagist.org/packages/fintrapay/fintrapay-php)
+[![Version](https://img.shields.io/badge/version-0.2.0-blue.svg)](https://packagist.org/packages/fintrapay/fintrapay-php)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](https://opensource.org/licenses/MIT)
 [![PHP](https://img.shields.io/badge/php-7.4%2B-blue.svg)](https://www.php.net/)
 
 ---
+
+> ## ⚠️ v0.2.0 — Breaking change to webhook verification
+>
+> The webhook signature verifier now requires the `X-FintraPay-Timestamp` header
+> to support the v2 webhook envelope (`HMAC(timestamp + "\n" + body)`). Versions
+> prior to 0.2.0 silently rejected every legitimate v2 delivery.
+>
+> See [CHANGELOG.md](CHANGELOG.md) for the migration in your language.
 
 ## Installation
 
@@ -48,7 +56,7 @@ use FintraPay\Webhook;
 $rawBody   = file_get_contents('php://input');
 $signature = $_SERVER['HTTP_X_FINTRAPAY_SIGNATURE'] ?? '';
 
-if (!Webhook::verifySignature($rawBody, $signature, $webhookSecret)) {
+if (!Webhook::verifySignature($rawBody, $signature, $webhookSecret, $_SERVER["HTTP_X_FINTRAPAY_TIMESTAMP"] ?? "")) {
     http_response_code(401);
     exit('Invalid signature');
 }
@@ -213,7 +221,7 @@ use FintraPay\Webhook;
 $rawBody   = file_get_contents('php://input');
 $signature = $_SERVER['HTTP_X_FINTRAPAY_SIGNATURE'] ?? '';
 
-if (!Webhook::verifySignature($rawBody, $signature, $webhookSecret)) {
+if (!Webhook::verifySignature($rawBody, $signature, $webhookSecret, $_SERVER["HTTP_X_FINTRAPAY_TIMESTAMP"] ?? "")) {
     http_response_code(401);
     exit('Invalid signature');
 }
@@ -232,7 +240,7 @@ Route::post('/webhook', function (Request $request) {
     $rawBody   = $request->getContent();
     $signature = $request->header('X-FintraPay-Signature', '');
 
-    if (!Webhook::verifySignature($rawBody, $signature, config('services.fintrapay.webhook_secret'))) {
+    if (!Webhook::verifySignature($rawBody, $signature, config('services.fintrapay.webhook_secret'), $request->header('X-FintraPay-Timestamp'))) {
         return response('Invalid signature', 401);
     }
 
@@ -255,7 +263,7 @@ public function webhookAction(Request $request): Response
     $rawBody   = $request->getContent();
     $signature = $request->headers->get('X-FintraPay-Signature', '');
 
-    if (!Webhook::verifySignature($rawBody, $signature, $this->webhookSecret)) {
+    if (!Webhook::verifySignature($rawBody, $signature, $this->webhookSecret, $request->getHeaderLine("X-FintraPay-Timestamp"))) {
         return new Response('Invalid signature', 401);
     }
 

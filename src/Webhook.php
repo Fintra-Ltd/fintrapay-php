@@ -75,16 +75,40 @@ final class Webhook
      *
      * @return bool True if the signature is valid.
      */
+    /**
+     * Verify an FintraPay v2 webhook signature.
+     *
+     * The v2 envelope signs (timestamp + "\n" + rawBody) with HMAC-SHA256 hex.
+     * Pass the X-FintraPay-Timestamp header value as $timestamp. Empty string
+     * means "verify legacy v1 raw-body signing" (discouraged).
+     *
+     * Also rejects deliveries older than $maxAgeSeconds (default 5 minutes) to
+     * defeat replay attacks.
+     */
     public static function verifySignature(
         string $rawBody,
         string $signature,
-        string $webhookSecret
+        string $webhookSecret,
+        string $timestamp = '',
+        int $maxAgeSeconds = 300
     ): bool {
         if ($rawBody === '' || $signature === '' || $webhookSecret === '') {
             return false;
         }
 
-        $expected = hash_hmac('sha256', $rawBody, $webhookSecret);
+        $payload = $rawBody;
+        if ($timestamp !== '') {
+            $ts = strtotime($timestamp);
+            if ($ts === false) {
+                return false;
+            }
+            if (abs(time() - $ts) > $maxAgeSeconds) {
+                return false;
+            }
+            $payload = $timestamp . "\n" . $rawBody;
+        }
+
+        $expected = hash_hmac('sha256', $payload, $webhookSecret);
 
         return hash_equals($expected, $signature);
     }
