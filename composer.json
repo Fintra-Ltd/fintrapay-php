@@ -3,7 +3,7 @@
   "description": "PHP SDK for FintraPay crypto payment gateway",
   "type": "library",
   "license": "MIT",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "authors": [{"name": "FintraPay", "email": "support@fintrapay.io"}],
   "require": {"php": ">=7.4", "ext-curl": "*", "ext-json": "*"},
   "autoload": {"psr-4": {"FintraPay\\": "src/"}},
