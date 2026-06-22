@@ -2,6 +2,12 @@
 
 All notable changes to this SDK are documented in this file.
 
+## 0.2.1 — 2026-05-02
+
+### Documentation
+
+- Webhook event bodies now include `external_id` — the value passed at invoice creation, or `null` when not supplied. Use it to correlate webhooks back to your own orders without parsing FintraPay's internal `invoice_id`. Verifier itself unchanged (signs opaque bytes); see `Webhook.php` example for usage.
+
 ## 0.2.0 — 2026-04-26
 
 **Breaking change** in `verify_webhook_signature` / `verifyWebhookSignature` /
