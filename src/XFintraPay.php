@@ -384,7 +384,8 @@ class FintraPay
         string $currency,
         string $blockchain,
         string $reason = 'payment',
-        ?string $reference = null
+        ?string $reference = null,
+        ?string $feeDeduction = null
     ): array {
         $body = [
             'to_address' => $toAddress,
@@ -396,6 +397,11 @@ class FintraPay
 
         if ($reference !== null) {
             $body['reference'] = $reference;
+        }
+
+        // 'from_amount' (default) or 'from_balance' — see createWithdrawal().
+        if ($feeDeduction !== null) {
+            $body['fee_deduction'] = $feeDeduction;
         }
 
         return $this->request('POST', '/payouts', $body);
@@ -464,13 +470,28 @@ class FintraPay
     public function createWithdrawal(
         string $amount,
         string $currency,
-        string $blockchain
+        string $blockchain,
+        ?string $toAddress = null,
+        ?string $feeDeduction = null
     ): array {
-        return $this->request('POST', '/withdrawals', [
+        $body = [
             'amount'     => $amount,
             'currency'   => $currency,
             'blockchain' => $blockchain,
-        ]);
+        ];
+
+        // Defaults to the wallet registered for this chain on your profile.
+        if ($toAddress !== null) {
+            $body['to_address'] = $toAddress;
+        }
+
+        // 'from_amount' (default): recipient gets amount minus fees.
+        // 'from_balance': recipient gets exactly amount, fees debited on top.
+        if ($feeDeduction !== null) {
+            $body['fee_deduction'] = $feeDeduction;
+        }
+
+        return $this->request('POST', '/withdrawals', $body);
     }
 
     /**
