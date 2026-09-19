@@ -2,6 +2,12 @@
 
 All notable changes to this SDK are documented in this file.
 
+## Unreleased
+
+### Added
+
+- Batch payouts accept `fee_deduction` (`createBatchPayout(..., $feeDeduction)`), applied to every recipient: `"from_amount"` (default) — each recipient gets their amount minus the per-recipient fee — or `"from_balance"` — each recipient gets exactly their amount and the fees are debited from your balance on top.
+
 ## 0.2.1 — 2026-05-02
 
 ### Documentation

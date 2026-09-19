@@ -414,19 +414,27 @@ class FintraPay
      * @param string                      $blockchain Chain name.
      * @param array<int, array<string, mixed>> $recipients Array of recipients:
      *     [['to_address' => '0x...', 'amount' => '50.00', 'reference' => 'sal-001'], ...]
+     * @param string|null                 $feeDeduction Applies to every recipient:
+     *     "from_amount" (default) or "from_balance" (recipients get exactly
+     *     their amount; fees are debited from your balance on top).
      *
      * @return array<string, mixed>
      */
     public function createBatchPayout(
         string $currency,
         string $blockchain,
-        array $recipients
+        array $recipients,
+        ?string $feeDeduction = null
     ): array {
-        return $this->request('POST', '/payouts/batch', [
+        $body = [
             'currency'   => $currency,
             'blockchain' => $blockchain,
             'recipients' => $recipients,
-        ]);
+        ];
+        if ($feeDeduction !== null) {
+            $body['fee_deduction'] = $feeDeduction;
+        }
+        return $this->request('POST', '/payouts/batch', $body);
     }
 
     /**
