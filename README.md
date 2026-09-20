@@ -98,6 +98,28 @@ All methods are available on the `\FintraPay\FintraPay` client instance. HMAC-SH
 | `getWithdrawal($withdrawalId)` | Get withdrawal by ID |
 | `listWithdrawals($page, $pageSize)` | List withdrawals |
 
+### Internal Transfers
+
+Move balance to another FintraPay merchant. Settles on the ledger — instant,
+irreversible, and no network fee. The confirmation code is emailed to **you**,
+the sender.
+
+| Method | Description |
+|--------|-------------|
+| `lookupTransferRecipient($email)` | Check an email belongs to a merchant you can send to |
+| `requestTransferOtp($toEmail, $amount, $currency, $blockchain, $note)` | Validate and email yourself a confirmation code |
+| `createTransfer($toEmail, $amount, $currency, $blockchain, $otp, $note)` | Send the transfer |
+| `listTransfers($page, $pageSize)` | List transfers in both directions |
+
+### Overpayment
+
+When a customer pays more than the invoice, decide what happens to the excess.
+
+| Method | Description |
+|--------|-------------|
+| `acceptOverpayment($invoiceId)` | Keep it — credit the excess to your balance |
+| `refundOverpayment($invoiceId)` | Return it to the sender's address |
+
 ### Earn
 
 | Method | Description |

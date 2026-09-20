@@ -527,6 +527,114 @@ class FintraPay
         return $this->request('GET', "/withdrawals?page={$page}&page_size={$pageSize}");
     }
 
+    // ── Internal transfers ──────────────────────────────────────
+
+    /**
+     * Check whether an email belongs to a merchant you can send to.
+     *
+     * Returns display details only, never a merchant id — createTransfer()
+     * re-resolves the email server-side. Rate limited, so it cannot be used
+     * to enumerate merchants.
+     */
+    public function lookupTransferRecipient(string $email): array
+    {
+        return $this->request('GET', '/transfers/lookup?email=' . rawurlencode($email));
+    }
+
+    /**
+     * Validate a transfer and email a confirmation code to YOUR address.
+     *
+     * The code is never in the response. When the result has
+     * otp_required === false the code is waived for this account and
+     * createTransfer() may be called without one.
+     */
+    public function requestTransferOtp(
+        string $toEmail,
+        string $amount,
+        string $currency,
+        string $blockchain,
+        ?string $note = null
+    ): array {
+        return $this->request('POST', '/transfers/otp',
+            self::transferBody($toEmail, $amount, $currency, $blockchain, $note));
+    }
+
+    /**
+     * Send balance to another FintraPay merchant. Instant and IRREVERSIBLE.
+     *
+     * Settles on the ledger — no on-chain transaction and no network fee.
+     * $otp is the code from requestTransferOtp(); omit it only when that call
+     * returned otp_required false.
+     */
+    public function createTransfer(
+        string $toEmail,
+        string $amount,
+        string $currency,
+        string $blockchain,
+        ?string $otp = null,
+        ?string $note = null
+    ): array {
+        $body = self::transferBody($toEmail, $amount, $currency, $blockchain, $note);
+        if ($otp !== null) {
+            $body['otp'] = $otp;
+        }
+
+        return $this->request('POST', '/transfers', $body);
+    }
+
+    /**
+     * List transfers in BOTH directions. Each row carries direction ("in" or
+     * "out") and the counterparty.
+     */
+    public function listTransfers(int $page = 1, int $pageSize = 50): array
+    {
+        return $this->request('GET', "/transfers?page={$page}&page_size={$pageSize}");
+    }
+
+    /**
+     * Shared body for requestTransferOtp() and createTransfer(). Both take the
+     * SAME shape — the code is bound to these exact details, so a body that
+     * differs between the two calls invalidates it.
+     */
+    private static function transferBody(
+        string $toEmail,
+        string $amount,
+        string $currency,
+        string $blockchain,
+        ?string $note
+    ): array {
+        $body = [
+            'to_email'   => $toEmail,
+            'amount'     => $amount,
+            'currency'   => $currency,
+            'blockchain' => $blockchain,
+        ];
+        if ($note !== null) {
+            $body['note'] = $note;
+        }
+
+        return $body;
+    }
+
+    // ── Overpayment ─────────────────────────────────────────────
+
+    /** Keep an overpayment: credit the excess to your balance. */
+    public function acceptOverpayment(string $invoiceId): array
+    {
+        return $this->request('POST', "/invoices/{$invoiceId}/overpayment/accept");
+    }
+
+    /**
+     * Return an overpayment to the sender's address.
+     *
+     * Queues the refund — it is not broadcast synchronously. Poll the invoice
+     * or listen for the webhook to see it complete.
+     */
+    public function refundOverpayment(string $invoiceId): array
+    {
+        return $this->request('POST', "/invoices/{$invoiceId}/overpayment/refund");
+    }
+
     // ── Earn ────────────────────────────────────────────────────
 
     /**
